@@ -22,53 +22,42 @@
   <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+# Configuración Base Datos Postgres 
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Installation
+1. Crear el archivo [ docker-compose.yml ] sobre el root del proyecto.
 
 ```bash
-$ npm install
-```
+version: '3.4'
 
-## Running the app
+
+services:
+#Crear servicio postgres
+  postgres:
+    image: postgres:13
+    environment:
+     - POSTGRES_DB=my_db
+     - POSTGRES_USER=root
+     - POSTGRES_PASSWORD=123456
+    ports:
+      - '5432:5432'
+    volumes:
+#Crear volumen postgres_data    
+      - ./postgres_data:/var/lib/postgresql/postgres_data
+
+```      
+2. Ignorar el directorio postgres_data en [ .gitignore ]
 
 ```bash
-# development
-$ npm run start
+# Igonar directorio postgres_data
+/postgres_data
 
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
 ```
 
-## Test
+3. Ejecutar comandos docker de acuerdo a la necesidad
 
-```bash
-# unit tests
-$ npm run test
+- *(Subir servicio)*      docker compose up -d postgres
+- *(Verificar servicio)*  docker compose ps
+- *(Bajar servicio)*      docker compose down
 
-# e2e tests
-$ npm run test:e2e
 
-# test coverage
-$ npm run test:cov
-```
 
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
-# nest-typeorm
