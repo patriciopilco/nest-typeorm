@@ -166,4 +166,50 @@ metodo () {
 }
 ```
 
+# ORM [ TypeORM ]
 
+- Contiene metodos complejos
+- Abstracción de código complejo SQL
+- Abstrae la conexión
+
+## TypeORM en NestJS
+
+1. instalar la dependencia de typeorm
+
+```bash
+npm install --save @nestjs/typeorm typeorm
+```
+2. Configurar modulo database 
+
+- importar el modulo typeorm
+
+```bash
+import { TypeOrmModule } from '@nestjs/typeorm'
+```
+
+- declarar en la sección de imports, ya que es un modulo que vamos a importar, con una configuración asincrona.
+
+```bash
+imports: [
+        TypeOrmModule.forRootAsync({
+            inject: [ config.KEY ],
+            useFactory:(ConfigService: ConfigType<typeof config>) => {
+                const { user, host, dbName, password, port } = ConfigService.postgres;
+                return {
+                    type: 'postgres',
+                    host,
+                    port,
+                    userName: user,
+                    password,
+                    database: dbName,
+                };
+            },
+        }),
+    ],
+```
+
+- exportar TypeOrmModule
+
+```bash
+ exports: ['PG', TypeOrmModule]
+```
