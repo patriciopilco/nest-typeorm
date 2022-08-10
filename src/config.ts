@@ -1,6 +1,6 @@
 import { registerAs } from '@nestjs/config';
 
-export default registerAs('config', () => {
+export default registerAs('database', () => {
     return {
         postgres:{
             dbName: process.env.POSTGRES_DB,

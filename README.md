@@ -79,15 +79,28 @@ export class DatabaseModule {}
 
 ```
 
-3. Crear ambientes [ .env, .stag.env, pro.env]
+3. Crear achivos de variables de entorno
+    - .env
+    - .stag.env
+    - .pro.env
+    - src/enviroments.ts
 
 ```bash
+# Contenido de variables de entorno 
 POSTGRES_DB=my_db
 POSTGRES_USER=root
 POSTGRES_PASSWORD=123456
 POSTGRES_PORT=5432
 POSTGRES_HOST=localhost
+```
 
+```bash
+# Contenido de enviroments.ts 
+export const enviroments = {
+    dev: '.env',
+    stag: '.stag.env',
+    prod: '.prod.env',
+  };
 ```
 
 4. Crear archivo config.ts
@@ -109,21 +122,26 @@ export default registerAs('config', () => {
 );
 ```
 
-5.Configurar modulo database
+
+
+
+
+
+5.Configurar modulo *database.module.ts*
 
 ```bash
 
 import { Module, Global } from '@nestjs/common';
 import { ConfigService, ConfigType } from '@nestjs/config';
 import { Client } from 'pg';
-import config from 'config';
+import database from 'config';
 
 @Global() 
 @Module({
     providers: [
         {
             provide: 'PG',
-            useFactory: (ConfigService: ConfigType<typeof config>)=>{
+            useFactory: (ConfigService: ConfigType<typeof database>)=>{
                 const { user, host, dbName, password, port} = ConfigService.postgres;
                 const client = new Client ({
                     user,
@@ -135,7 +153,7 @@ import config from 'config';
             client.connect();
             return client;    
             },
-            inject: [config.KEY]
+            inject: [database.KEY]
         }
     ],
     exports: ['PG']
@@ -187,32 +205,49 @@ npm install --save @nestjs/typeorm typeorm
 import { TypeOrmModule } from '@nestjs/typeorm'
 ```
 
-- declarar en la sección de imports, ya que es un modulo que vamos a importar, con una configuración asincrona.
+- Realizar la configuración asincrona a base de datos usando *TypeOrmModule*
+
+ * Añadir atributo synchronize (Solo desarrollo)
+ * Añadir atributo autoLoadEntities (Solo desarrollo)
+ * exportar TypeOrmModule
+
 
 ```bash
-imports: [
+import { Module, Global } from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import postgres from 'src/config';
+
+@Global() 
+@Module({
+    imports: [
         TypeOrmModule.forRootAsync({
-            inject: [ config.KEY ],
-            useFactory:(ConfigService: ConfigType<typeof config>) => {
-                const { user, host, dbName, password, port } = ConfigService.postgres;
+            inject: [ postgres.KEY ],
+            useFactory: (configService: ConfigType<typeof postgres>) => {
+                const { user, host, dbName, password, port } = configService.postgres;
+                console.log(configService.postgres);
                 return {
                     type: 'postgres',
                     host,
                     port,
-                    userName: user,
+                    username: user,
                     password,
                     database: dbName,
+                    synchronize: true, //       nuevo atributo
+                    autoLoadEntities: true, //  nuevo atributo
                 };
             },
         }),
     ],
+    
+    exports: [TypeOrmModule]
+})
+export class DatabaseModule {}
 ```
 
-- exportar TypeOrmModule
 
-```bash
- exports: ['PG', TypeOrmModule]
-```
+
+
 
 ## TypeORM Entidades
 
@@ -262,4 +297,88 @@ import { Product } from './../products/entities/product.entity';
     imports: [ TypeOrmModule.forFeature([Product])],
 })
 export class ProductsModule {}
+```
+## Patron Repositories en Servicios
+
+1. Crear el servicio de productos
+
+```bash
+
+nest g s products/services/products --flat
+```
+2. Configurar servicio
+-Importar InjectRepository
+-Importar entidad Product
+-Importar Repository para tipar la entidad en el constructor.
+-Crear constructor e inyectar product
+
+```bash
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm'
+import { Product } from './../entities/product.entity';
+import { Repository } from 'typeorm';
+
+
+@Injectable()
+export class ProductsService {
+
+    constructor(
+        @InjectRepository(Product) private productRepo:Repository<Product>,
+    ){}
+}
+
+```
+
+3 Definir metodos de servicio
+
+```bash
+
+
+    findAll(){
+        return this.productRepo.find();
+    }
+
+    findOne(id:number){
+        const product = this.productRepo.findOneBy({id: id })
+        if(!product){
+            throw new NotFoundException(`Producto #${id} not found`);
+        }
+        return product;
+    }
+```
+
+## Crear Controlador
+
+1. Crear controlador
+
+```bash
+nest g co products/controllers/products --flat
+```
+2. Crear métodos controlador
+
+```bash
+
+import { Controller, Get } from '@nestjs/common';
+import { ProductsService } from '../services/products.service';
+
+@Controller('products')
+export class ProductsController {
+   
+    constructor(
+        private productsService: ProductsService
+    ){}
+    
+    @Get()
+    getProducts(){
+        return this.productsService.findAll();
+    }
+}
+
+```
+
+## Ejecutar
+
+```bash
+
+
 ```
