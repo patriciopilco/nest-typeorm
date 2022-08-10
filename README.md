@@ -60,4 +60,110 @@ services:
 - *(Bajar servicio)*      docker compose down
 
 
+# Conexión Inyectable y configuracón de ambientes
+
+1. Crear un modulo database
+
+```bash
+nest g module database/database 
+```
+
+2. Definir modulo como global, para que sea visto por cualquier otro servicio.
+
+```bash
+import { Module, Global } from '@nestjs/common';
+
+@Global() 
+@Module({})
+export class DatabaseModule {}
+
+```
+
+3. Crear ambientes [ .env, .stag.env, pro.env]
+
+```bash
+POSTGRES_DB=my_db
+POSTGRES_USER=root
+POSTGRES_PASSWORD=123456
+POSTGRES_PORT=5432
+POSTGRES_HOST=localhost
+
+```
+
+4. Crear archivo config.ts
+
+```bash
+import { registerAs } from '@nestjs/config';
+
+export default registerAs('config', () => {
+    return {
+        postgres:{
+            dbName: process.env.POSTGRES_DB,
+            port: parseInt(process.env.POSTGRES_PORT),
+            password: process.env.POSTGRES_PASSWORD,
+            user: process.env.POSTGRES_USER,
+            host: process.env.POSTGRES_HOST,
+        }
+    }
+}
+);
+```
+
+5.Configurar modulo database
+
+```bash
+
+import { Module, Global } from '@nestjs/common';
+import { ConfigService, ConfigType } from '@nestjs/config';
+import { Client } from 'pg';
+import config from 'config';
+
+@Global() 
+@Module({
+    providers: [
+        {
+            provide: 'PG',
+            useFactory: (ConfigService: ConfigType<typeof config>)=>{
+                const { user, host, dbName, password, port} = ConfigService.postgres;
+                const client = new Client ({
+                    user,
+                    host,
+                    database: dbName,
+                    password,
+                    port,
+                });
+            client.connect();
+            return client;    
+            },
+            inject: [config.KEY]
+        }
+    ],
+    exports: ['PG']
+})
+export class DatabaseModule {}
+
+```
+
+6. Inyectar en un servicio
+
+```bash
+
+import {Client} form 'pg';
+
+constructor(
+  @Inject('PG') private clientPg: Client,
+){}
+
+metodo () {
+  return new Promise((resolve,reject)=>{
+    this.clienPg.query('SELECT * FROM tasks',(err,rest)=>{
+      if(err){
+        reject(err);
+      }
+      resolve(res.rows);
+    });
+  });
+}
+```
+
 
