@@ -3,7 +3,7 @@ import { ConfigService, ConfigType } from '@nestjs/config';
 import { Client } from 'pg';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import config from 'config';
-import { userInfo } from 'os';
+
 
 @Global() 
 @Module({
